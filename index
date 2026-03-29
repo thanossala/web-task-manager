@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f5f5f3;
+      --color-text-primary: #1a1a1a;
+      --color-text-secondary: #6b6b6b;
+      --color-text-tertiary: #aaaaaa;
+      --color-border-tertiary: rgba(0,0,0,0.1);
+      --color-border-secondary: rgba(0,0,0,0.2);
+      --border-radius-md: 8px;
+      --border-radius-lg: 12px;
+      --font-sans: system-ui, -apple-system, sans-serif;
+    }
+
+    .dark {
+      --color-background-primary: #1c1c1c;
+      --color-background-secondary: #2a2a2a;
+      --color-text-primary: #f0f0f0;
+      --color-text-secondary: #9a9a9a;
+      --color-text-tertiary: #555555;
+      --color-border-tertiary: rgba(255,255,255,0.1);
+      --color-border-secondary: rgba(255,255,255,0.2);
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-background-secondary);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .app { padding: 2rem 1rem; max-width: 680px; margin: 0 auto; }
+    .header { margin-bottom: 1.5rem; }
+    .header h1 { font-size: 26px; font-weight: 500; color: var(--color-text-primary); }
+    .header p { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 1.25rem; }
+    .stat { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+    .stat-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 2px; }
+    .stat-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+
+    .progress-bar { height: 4px; background: var(--color-border-tertiary); border-radius: 2px; margin-bottom: 1.25rem; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--color-text-primary); border-radius: 2px; transition: width 0.4s; }
+
+    .add-section { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem; margin-bottom: 1rem; }
+    .add-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .add-row input[type="text"] { flex: 1; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; background: var(--color-background-secondary); color: var(--color-text-primary); outline: none; }
+    .add-row select { width: 130px; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; background: var(--color-background-secondary); color: var(--color-text-primary); outline: none; }
+    .add-row2 { display: flex; gap: 8px; }
+    .add-row2 input[type="date"] { flex: 1; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; background: var(--color-background-secondary); color: var(--color-text-primary); outline: none; }
+    .add-row2 input[type="text"] { flex: 2; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; background: var(--color-background-secondary); color: var(--color-text-primary); outline: none; }
+    .add-btn { background: var(--color-text-primary); color: var(--color-background-primary); border: none; border-radius: var(--border-radius-md); padding: 0 16px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .add-btn:hover { opacity: 0.85; }
+
+    .filters { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .filter-btn { background: transparent; border: 0.5px solid var(--color-border-secondary); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; }
+    .filter-btn.active { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+    .filter-sep { flex: 1; }
+    .sort-sel { font-size: 13px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 4px 8px; background: var(--color-background-primary); color: var(--color-text-primary); }
+    .dark-btn { background: transparent; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 4px 10px; font-size: 12px; color: var(--color-text-secondary); cursor: pointer; }
+
+    .tasks { display: flex; flex-direction: column; gap: 6px; }
+    .task { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; transition: opacity 0.2s; }
+    .task.done { opacity: 0.55; }
+    .task-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+    .task-check.checked { background: var(--color-text-primary); border-color: var(--color-text-primary); }
+    .task-check.checked::after { content: ''; display: block; width: 6px; height: 10px; border: 2px solid var(--color-background-primary); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px, -1px); }
+    .task-body { flex: 1; min-width: 0; }
+    .task-title { font-size: 14px; color: var(--color-text-primary); font-weight: 400; }
+    .task.done .task-title { text-decoration: line-through; color: var(--color-text-tertiary); }
+    .task-meta { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; align-items: center; }
+    .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+    .tag-work     { background: #E6F1FB; color: #0C447C; }
+    .tag-personal { background: #EAF3DE; color: #27500A; }
+    .tag-study    { background: #EEEDFE; color: #3C3489; }
+    .tag-other    { background: #F1EFE8; color: #444441; }
+    .tag-custom   { background: rgba(0,0,0,0.06); color: var(--color-text-secondary); }
+    .due { font-size: 11px; color: var(--color-text-secondary); }
+    .due.overdue { color: #A32D2D; }
+    .task-del { background: transparent; border: none; cursor: pointer; color: var(--color-text-tertiary); font-size: 18px; line-height: 1; padding: 2px 4px; flex-shrink: 0; }
+    .task-del:hover { color: var(--color-text-primary); }
+    .empty { text-align: center; padding: 2rem; color: var(--color-text-secondary); font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Task manager</h1>
+    <p id="date-label"></p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Σύνολο</div><div class="stat-val" id="s-total">0</div></div>
+    <div class="stat"><div class="stat-label">Εκκρεμούν</div><div class="stat-val" id="s-pending">0</div></div>
+    <div class="stat"><div class="stat-label">Ολοκλ/νες</div><div class="stat-val" id="s-done">0</div></div>
+    <div class="stat"><div class="stat-label">Εκπρόθεσμες</div><div class="stat-val" id="s-over" style="color:#A32D2D">0</div></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+
+  <div class="add-section">
+    <div class="add-row">
+      <input type="text" id="inp-title" placeholder="Νέα εργασία..." />
+      <select id="inp-cat">
+        <option value="work">Work</option>
+        <option value="personal">Personal</option>
+        <option value="study">Study</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="add-row2">
+      <input type="date" id="inp-date" />
+      <input type="text" id="inp-tag" placeholder="Tags (κόμμα: java, oop)" />
+      <button class="add-btn" onclick="addTask()">+ Προσθήκη</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all',this)">Όλες</button>
+    <button class="filter-btn" onclick="setFilter('pending',this)">Εκκρεμούν</button>
+    <button class="filter-btn" onclick="setFilter('done',this)">Ολοκλ/νες</button>
+    <button class="filter-btn" onclick="setFilter('overdue',this)">Εκπρόθεσμες</button>
+    <span class="filter-sep"></span>
+    <select class="sort-sel" id="sort-sel" onchange="render()">
+      <option value="newest">Νεότερες πρώτα</option>
+      <option value="oldest">Παλαιότερες πρώτα</option>
+      <option value="due">Due date</option>
+      <option value="cat">Κατηγορία</option>
+    </select>
+    <button class="dark-btn" onclick="toggleDark()">Dark / Light</button>
+  </div>
+
+  <div class="tasks" id="task-list"></div>
+</div>
+
+<script>
+  let tasks = [];
+  let filter = 'all';
+
+  try { tasks = JSON.parse(localStorage.getItem('tasks_v2') || '[]'); } catch(e){ tasks=[]; }
+
+  function save(){ try{ localStorage.setItem('tasks_v2', JSON.stringify(tasks)); }catch(e){} }
+
+  function todayStr(){ return new Date().toISOString().split('T')[0]; }
+
+  function isOverdue(t){ return !t.done && t.due && t.due < todayStr(); }
+
+  document.getElementById('date-label').textContent = new Date().toLocaleDateString('el-GR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('inp-title').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+
+  function addTask(){
+    const title = document.getElementById('inp-title').value.trim();
+    if(!title) return;
+    const cat = document.getElementById('inp-cat').value;
+    const due = document.getElementById('inp-date').value;
+    const rawTags = document.getElementById('inp-tag').value;
+    const tags = rawTags ? rawTags.split(',').map(t=>t.trim()).filter(Boolean) : [];
+    tasks.unshift({ id: Date.now(), title, cat, due, tags, done: false, created: todayStr() });
+    save();
+    document.getElementById('inp-title').value='';
+    document.getElementById('inp-tag').value='';
+    document.getElementById('inp-date').value='';
+    render();
+  }
+
+  function toggleDone(id){
+    const t = tasks.find(x=>x.id===id);
+    if(t) t.done = !t.done;
+    save(); render();
+  }
+
+  function deleteTask(id){
+    tasks = tasks.filter(x=>x.id!==id);
+    save(); render();
+  }
+
+  function setFilter(f, btn){
+    filter = f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function render(){
+    const sort = document.getElementById('sort-sel').value;
+    let list = [...tasks];
+
+    if(filter==='pending') list = list.filter(t=>!t.done);
+    if(filter==='done') list = list.filter(t=>t.done);
+    if(filter==='overdue') list = list.filter(t=>isOverdue(t));
+
+    if(sort==='oldest') list.sort((a,b)=>a.id-b.id);
+    else if(sort==='due') list.sort((a,b)=>{ if(!a.due&&!b.due)return 0; if(!a.due)return 1; if(!b.due)return -1; return a.due.localeCompare(b.due); });
+    else if(sort==='cat') list.sort((a,b)=>a.cat.localeCompare(b.cat));
+
+    const total=tasks.length, done=tasks.filter(t=>t.done).length, pending=tasks.filter(t=>!t.done).length, over=tasks.filter(t=>isOverdue(t)).length;
+    document.getElementById('s-total').textContent=total;
+    document.getElementById('s-done').textContent=done;
+    document.getElementById('s-pending').textContent=pending;
+    document.getElementById('s-over').textContent=over;
+    const pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('prog').style.width=pct+'%';
+
+    const container = document.getElementById('task-list');
+    if(list.length===0){
+      container.innerHTML='<div class="empty">Δεν υπάρχουν εργασίες εδώ.</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(t=>{
+      const over = isOverdue(t);
+      const dueLabel = t.due ? (over ? '⚠ '+formatDate(t.due) : formatDate(t.due)) : '';
+      const tagsHtml = t.tags.map(tag=>`<span class="tag tag-custom">${esc(tag)}</span>`).join('');
+      return `
+      <div class="task${t.done?' done':''}">
+        <div class="task-check${t.done?' checked':''}" onclick="toggleDone(${t.id})"></div>
+        <div class="task-body">
+          <div class="task-title">${esc(t.title)}</div>
+          <div class="task-meta">
+            <span class="tag tag-${t.cat}">${t.cat}</span>
+            ${tagsHtml}
+            ${dueLabel ? `<span class="due${over?' overdue':''}">${dueLabel}</span>` : ''}
+          </div>
+        </div>
+        <button class="task-del" onclick="deleteTask(${t.id})" title="Διαγραφή">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  function formatDate(d){
+    if(!d) return '';
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+
+  function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+  function toggleDark(){
+    document.documentElement.classList.toggle('dark');
+  }
+
+  render();
+</script>
+</body>
+</html>
