@@ -83,7 +83,7 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
-    input#title { flex: 2; min-width: 200px; }
+    input#titleInput { flex: 2; min-width: 200px; }
 
     button {
       font-weight: 500;
@@ -354,6 +354,20 @@
     });
   });
 
+  // Event Delegation for Task Actions (Fixes the ID precision bug)
+  taskList.addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (!button) return;
+
+    const taskId = parseInt(button.getAttribute('data-id'), 10);
+    
+    if (button.classList.contains('btn-done')) {
+      toggleTask(taskId);
+    } else if (button.classList.contains('btn-del')) {
+      deleteTask(taskId);
+    }
+  });
+
   // Actions
   function save() {
     localStorage.setItem('tasks_pro', JSON.stringify(tasks));
@@ -364,7 +378,7 @@
     if (!text) return;
 
     tasks.unshift({
-      id: Date.now(),
+      id: Date.now(), // Safe to keep now with event delegation strings
       title: text,
       priority: priorityInput.value,
       due: dueInput.value,
@@ -394,7 +408,9 @@
   // Formatting helpers
   function formatDate(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
+    // Fixing timezone shifting issue common with HTML date input values
+    const parts = dateStr.split('-');
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
@@ -421,10 +437,10 @@
             </div>
           </div>
           <div class="actions">
-            <button class="btn-icon btn-done" onclick="toggleTask(${t.id})" aria-label="Toggle Complete">
+            <button class="btn-icon btn-done" data-id="${t.id}" aria-label="Toggle Complete">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             </button>
-            <button class="btn-icon btn-del" onclick="deleteTask(${t.id})" aria-label="Delete Task">
+            <button class="btn-icon btn-del" data-id="${t.id}" aria-label="Delete Task">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
           </div>
