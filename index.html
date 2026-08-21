@@ -318,7 +318,16 @@
 
 <script>
   // State Management
-  let tasks = JSON.parse(localStorage.getItem('tasks_pro') || '[]');
+  // Guard against corrupted/manually-edited localStorage data: without the
+  // try/catch, a malformed value here throws during page load and breaks
+  // the entire app before any UI renders.
+  let tasks = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem('tasks_pro') || '[]');
+    tasks = Array.isArray(stored) ? stored : [];
+  } catch {
+    tasks = [];
+  }
   let currentFilter = 'all';
 
   // DOM Elements
@@ -359,7 +368,9 @@
     const button = e.target.closest('button');
     if (!button) return;
 
-    const taskId = parseInt(button.getAttribute('data-id'), 10);
+    // IDs are strings (see addTask), so read data-id back as-is — no parseInt,
+    // which would silently truncate at the "-" separator and stop matching.
+    const taskId = button.getAttribute('data-id');
     
     if (button.classList.contains('btn-done')) {
       toggleTask(taskId);
@@ -378,7 +389,10 @@
     if (!text) return;
 
     tasks.unshift({
-      id: Date.now(), // Safe to keep now with event delegation strings
+      // Date.now() alone can collide if two tasks are added within the same
+      // millisecond (e.g. a fast double-click); appending a random suffix
+      // keeps ids unique so toggle/delete/edit always target the right task.
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       title: text,
       priority: priorityInput.value,
       due: dueInput.value,
